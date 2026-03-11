@@ -3,10 +3,6 @@
 > WhatsApp session generator for **ATASSA-MD / Gifted-MD** and any Baileys-based bot.  
 > Supports **pair code** and **QR code** login, with optional **short session IDs** stored in MongoDB or PostgreSQL.
 
-<p align="center">
-  <img src="https://profile-counter.glitch.me/{mauricegift}/count.svg" alt="Visitor Count" />
-</p>
-
 <a href='https://github.com/mauricegift/gifted-session/fork' target="_blank">
   <img alt='FORK REPO' src='https://img.shields.io/badge/-FORK REPO-black?style=for-the-badge&logo=github&logoColor=white'/>
 </a>
@@ -174,3 +170,10 @@ SESSION_ID=Gifted~H4sIAAAAA...  # long session (full zlib string)
 </a>
 
 [`ℹ️ Contact Owner`](https://api.giftedtech.co.ke/contact)
+
+
+## Repo Star History
+
+[![Gifted-Session](https://api.star-history.com/svg?repos=mauricegift/gifted-session&type=Timeline)](#)
+
+<a><img src='https://i.imgur.com/LyHic3i.gif'/></a>
