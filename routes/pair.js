@@ -3,7 +3,8 @@ const {
     removeFile,
     generateRandomCode
 } = require('../gift');
-const { SESSION_PREFIX, GC_JID } = require('../config');
+const { SESSION_PREFIX, GC_JID, BOT_REPO, WA_CHANNEL, MSG_FOOTER } = require('../config');
+const { isConfigured, saveSession } = require('../gift/sessionStore');
 const zlib = require('zlib');
 const express = require('express');
 const fs = require('fs');
@@ -25,6 +26,7 @@ const sessionDir = path.join(__dirname, "session");
 router.get('/', async (req, res) => {
     const id = giftedId();
     let num = req.query.number;
+    const sessionType = (req.query.type || 'short').toLowerCase();
     let responseSent = false;
     let sessionCleanedUp = false;
 
@@ -68,7 +70,7 @@ router.get('/', async (req, res) => {
                 const randomCode = generateRandomCode();
                 const code = await Gifted.requestPairingCode(num, randomCode);
                 if (!responseSent && !res.headersSent) {
-                    res.json({ code: code });
+                    res.json({ code: code, fallback: sessionType === 'short' && !isConfigured() });
                     responseSent = true;
                 }
             }
@@ -117,6 +119,27 @@ router.get('/', async (req, res) => {
                     try {
                         let compressedData = zlib.gzipSync(sessionData);
                         let b64data = compressedData.toString('base64');
+                        const fullSession = SESSION_PREFIX + b64data;
+
+                        let msgText, msgButtons;
+                        if (isConfigured() && sessionType === 'short') {
+                            const shortId = await saveSession(fullSession);
+                            const shortSession = `${SESSION_PREFIX}${shortId}`;
+                            msgText = `*SESSION ID ✅*\n\n${shortSession}`;
+                            msgButtons = [
+                                { name: 'cta_copy', buttonParamsJson: JSON.stringify({ display_text: 'Copy Session', copy_code: shortSession }) },
+                                { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Visit Bot Repo', url: BOT_REPO }) },
+                                { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Join WaChannel', url: WA_CHANNEL }) }
+                            ];
+                        } else {
+                            msgText = `*SESSION ID ✅*\n\n${fullSession}`;
+                            msgButtons = [
+                                { name: 'cta_copy', buttonParamsJson: JSON.stringify({ display_text: 'Copy Session', copy_code: fullSession }) },
+                                { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Visit Bot Repo', url: BOT_REPO }) },
+                                { name: 'cta_url', buttonParamsJson: JSON.stringify({ display_text: 'Join WaChannel', url: WA_CHANNEL }) }
+                            ];
+                        }
+
                         await delay(5000);
 
                         let sessionSent = false;
@@ -127,31 +150,9 @@ router.get('/', async (req, res) => {
                             try {
                                 await sendButtons(Gifted, Gifted.user.id, {
                                     title: '',
-                                    text: SESSION_PREFIX + b64data,
-                                    footer: `> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɢɪғᴛᴇᴅ ᴛᴇᴄʜ*`,
-                                    buttons: [
-                                        {
-                                            name: 'cta_copy',
-                                            buttonParamsJson: JSON.stringify({
-                                                display_text: 'Copy Session',
-                                                copy_code: SESSION_PREFIX + b64data
-                                            })
-                                        },
-                                        {
-                                            name: 'cta_url',
-                                            buttonParamsJson: JSON.stringify({
-                                                display_text: 'Visit Bot Repo',
-                                                url: 'https://github.com/mauricegift/atassa'
-                                            })
-                                        },
-                                        {
-                                            name: 'cta_url',
-                                            buttonParamsJson: JSON.stringify({
-                                                display_text: 'Join WaChannel',
-                                                url: 'https://whatsapp.com/channel/0029Vb6lNd511ulWbxu1cT3A'
-                                            })
-                                        }
-                                    ]
+                                    text: msgText,
+                                    footer: MSG_FOOTER,
+                                    buttons: msgButtons
                                 });
                                 sessionSent = true;
                             } catch (sendError) {
